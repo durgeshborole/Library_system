@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel - Library System</title>
+  <link rel="stylesheet" href="style.css" />
+ </head>
+<body>
+  <header class="mit-header">
+    <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
+    <div class="header-text">
+      <h1>Admin Control Panel</h1>
+      <p>MIT College of Railway Engineering & Research</p>
+    </div>
+  </header>
+
+  <nav class="navbar">
+    <div class="logo">Admin</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="log.html">Logs</a></li>
+      <li><a href="analysis.html">Analysis</a></li>
+      <li><a href="#" class="active">Admin Panel</a></li>
+    </ul>
+  </nav>
+
+  
+
+  <main class="dashboard">
+    <section class="card">
+      <h3>⏰ Auto Exit Schedule</h3>
+      <label for="autoExitHour">Hour:</label>
+      <input type="number" id="autoExitHour" min="0" max="23" placeholder="e.g. 21 for 9 PM" />
+
+      <label for="autoExitMinute">Minute:</label>
+      <input type="number" id="autoExitMinute" min="0" max="59" placeholder="e.g. 0" />
+
+      <button onclick="updateAutoExit()">Update Time</button>
+    </section>
+
+    <section class="card">
+      <h3>🔁 Force Manual Exit</h3>
+      <p>This will mark all visitors currently inside as exited.</p>
+      <button onclick="forceExit()">Force Exit All</button>
+    </section>
+
+    <section class="card">
+      <h3>📥 Export Logs</h3>
+      <p>Download visitor logs in CSV format.</p>
+      <button onclick="exportLogs('today')">Export Today's Logs</button>
+      <button onclick="exportLogs('all')">Export All Logs</button>
+    </section>
+
+    <section class="card">
+      <h3>👤 Registered Users</h3>
+      <p>Manage students and staff registered in the system.</p>
+      <button onclick="location.href='registered.html'">Manage Users</button>
+    </section>
+
+    <section class="card">
+      <h3>📢 Add Library Notice</h3>
+      <p>Post a new notice visible on the homepage.</p>
+      <textarea id="noticeText" rows="4" placeholder="Enter notice text..."></textarea>
+      <button onclick="submitNotice()">Post Notice</button>
+    </section>
+
+    <section class="card">
+      <h3>🖼️ Upload Visitor Photo</h3>
+      <input type="text" id="photoBarcode" placeholder="Enter Barcode" />
+      <input type="file" id="photoFile" accept="image/*" />
+      <button onclick="uploadPhoto()">Upload Photo</button>
+    </section>
+    
+    <section class="card">
+      <h3>🖼️ Bulk Upload Visitor Photos</h3>
+      <input type="file" id="bulkPhotoFiles" accept="image/*" multiple />
+      <button onclick="bulkUploadPhotos()">Bulk Upload</button>
+    </section>
+
+    <section class="card">
+      <h3>🗑️ Manage Library Notices</h3>
+      <ul id="adminNoticeList">
+        <li>Loading notices...</li>
+      </ul>
+    </section>
+    
+    
+    
+  </main>
+
+  <footer class="footer">
+    <p>Admin Dashboard | Developed by MITCORER Team</p>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>

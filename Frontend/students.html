@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Registered Students</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    table {
+      width: 90%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    img {
+      border-radius: 6px;
+      max-height: 60px;
+    }
+
+    .search-bar {
+      text-align: center;
+      margin: 20px;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      width: 300px;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="mit-header">
+    <h1>📘 Registered Students</h1>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search by name or barcode...">
+  </div>
+
+  <main class="student-list-container">
+    <div id="studentsCardContainer"></div>
+  </main>
+
+
+  <footer class="footer">
+    <p>MITCORER Library System</p>
+  </footer>
+
+  <script src="students.js"></script>
+</body>
+
+</html>

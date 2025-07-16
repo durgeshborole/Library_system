@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Library Entry Analysis</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="mit-header">
+    <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
+    <div class="header-text">
+      <p class="sub-text">Under the aegis of MAEER's MIT Pune</p>
+      <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
+      <p class="aff-text">Affiliated to PAH Solapur University | DTE Code - 06901</p>
+    </div>
+  </header>
+
+  <nav class="navbar">
+    <div class="logo">Dashboard</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="log.html">Log Entries</a></li>
+      <li><a href="analysis.html" class="active">Analysis</a></li>
+      <li><a href="About.html">About</a></li>
+    </ul>
+  </nav>
+
+  <main class="analysis-content">
+    <h2>📊 Entry Analysis</h2>
+
+    <!-- Filters -->
+    <div class="filters">
+      <select id="departmentFilter">
+        <option value="">All Departments</option>
+        <option value="Computer Science">CSE</option>
+        <option value="Mechanical">ME</option>
+        <option value="Civil">CE</option>
+        <option value="Electronics and Communication">E&TC</option>
+        <option value="Electronics and Computer">ECE</option>
+      </select>
+
+      <select id="designationFilter">
+        <option value="">All Designations</option>
+        <option value="Student">Student</option>
+        <option value="Faculty">Staff</option>
+        <option value="Non-Teaching">Non-Teaching</option>
+      </select>
+
+      <input type="date" id="startDate" />
+      <input type="date" id="endDate" />
+
+      <button id="exportBtn">Export to CSV</button>
+    </div>
+
+    <!-- Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Designation</th>
+          <th>Entry Date</th>
+          <th>Entry Time</th>
+          <th>Exit Time</th>
+        </tr>
+      </thead>
+      <tbody id="analysisTable">
+        <!-- Rows will be inserted here -->
+      </tbody>
+    </table>
+  </main>
+
+  <footer class="footer">
+    <p>Developed by Durgesh Borole | Raghvendra Gupta | Rahul Baravkar | Bhogesh Allapure</p>
+  </footer>
+
+  <script src="analysis.js"></script>
+</body>
+</html>

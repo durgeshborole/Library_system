@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Face Verification</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; margin-top: 30px; }
+    video, canvas { border: 2px solid #333; margin: 10px; }
+    button { padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>Live Face Verification</h2>
+  <video id="video" width="400" height="300" autoplay></video><br>
+  <canvas id="canvas" width="400" height="300" style="display:none;"></canvas><br>
+  <button onclick="verifyFace()">Capture & Verify</button>
+  <p id="result"></p>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const result = document.getElementById('result');
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => alert("Webcam access denied."));
+
+    async function verifyFace() {
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL('image/jpeg');
+
+      result.textContent = "⏳ Verifying...";
+
+      const res = await fetch('http://localhost:5001/verify-face', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageData })
+      });
+
+      const data = await res.json();
+      result.textContent = data.verified ? `✅ Verified: ${data.name}` : "❌ No Match Found";
+    }
+  </script>
+</body>
+</html>

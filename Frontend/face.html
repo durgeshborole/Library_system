@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Face Verification</title>
+</head>
+
+<body>
+  <h2>Face Verification</h2>
+  <video id="video" width="320" height="240" autoplay></video>
+  <br>
+  <button onclick="verify()">Verify Face</button>
+  <p id="result">Waiting...</p>
+
+  <script>
+    const video = document.getElementById("video");
+
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+      video.srcObject = stream;
+    });
+
+    async function verify() {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+      const image = canvas.toDataURL("image/jpeg");
+
+      const barcode = prompt("Enter barcode to verify");  // or get from a form input
+
+      const response = await fetch("http://localhost:9000/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image, barcode })
+      });
+
+      const data = await response.json();
+      document.getElementById("result").innerText =
+        data.result === "match"
+          ? `✅ Match for ${data.name} (Distance: ${data.distance.toFixed(4)})`
+          : data.result === "unrecognized"
+            ? "❌ Face does not match"
+            : "⚠️ Error: " + data.message;
+    }
+
+  </script>
+</body>
+
+</html>

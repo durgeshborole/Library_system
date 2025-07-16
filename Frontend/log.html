@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log Entries</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/idb@7/build/iife/index-min.js"></script>
+</head>
+
+<body>
+
+
+
+  <!-- MITCORER Header -->
+  <header class="mit-header">
+    <img src="./images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
+    <div class="header-text">
+      <p class="sub-text">Under the aegis of MAEER's MIT Pune</p>
+      <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
+      <p class="aff-text">
+        Affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAH) Solapur, Approved by AICTE, New Delhi,
+        Recognised by Govt. Of Maharashtra, DTE Mumbai.<br />
+        <strong>DTE CODE - 06901</strong>
+      </p>
+    </div>
+  </header>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">Dashboard</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="log.html" class="active">Log Entries</a></li>
+      <li><a href="analysis.html">Analysis</a></li>
+      <li><a href="About.html">About</a></li>
+    </ul>
+  </nav>
+
+  <!-- Scanner & Log Section -->
+  <main class="log-page">
+    <section class="scanner">
+      <input type="text" id="barcodeInput" placeholder="Scan your barcode here" autofocus />
+    </section>
+
+
+    <section id="visitorDetails" class="visitor-details"></section>
+
+    <section id="liveLog" class="log-section">
+      <h2>Live Entry Log</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Year</th>
+            <th>Designation</th>
+            <th>Entry Time</th>
+            <th>Exit Time</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody id="logTable"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- <section>
+    <h2>Live Webcam for Face Verification</h2>
+    <video id="webcam" autoplay muted playsinline width="320" height="240"></video>
+    <p id="faceStatus">Loading webcam...</p>
+  </section> -->
+
+  <div id="net-status" style="background: red; color: white; padding: 5px;">
+    ⛔ Offline
+  </div>
+
+
+  <!-- In log.html -->
+  
+
+  <script src="./scriptlog.js"></script>
+</body>
+
+</html>
