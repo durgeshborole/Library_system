@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Visitors - Library System</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- MITCORER Header -->
+    <header class="mit-header">
+        <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
+        <div class="header-text">
+            <p class="sub-text">Under the aegis of MAEER's MIT Pune</p>
+            <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
+            <p class="aff-text">
+                Affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAH) Solapur, Approved by AICTE, New
+                Delhi,
+                Recognised by Govt. Of Maharashtra, DTE Mumbai.<br />
+                <strong>DTE CODE - 06901</strong>
+            </p>
+        </div>
+    </header>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">Admin</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="log.html">Logs</a></li>
+            <li><a href="analysis.html">Analysis</a></li>
+            <li><a href="admin.html">Admin Panel</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <!-- <main class="dashboard-home">
+    <section class="card">
+      <h2>➕ Add Single Visitor</h2>
+      <form id="singleVisitorForm" enctype="multipart/form-data">
+        <input type="text" name="barcode" placeholder="Barcode" required><br><br>
+        <input type="text" name="name" placeholder="Name" required><br><br>
+        <input type="text" name="mobile" placeholder="Mobile Number" required><br><br>
+        <input type="email" name="email" placeholder="Email (optional)"><br><br>
+        <input type="file" name="photo" accept="image/*" required><br><br>
+        <button type="submit">Add Visitor</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>📦 Bulk Upload Visitors</h2>
+      <form id="bulkUploadForm" enctype="multipart/form-data">
+        <label>CSV File:</label><br>
+        <input type="file" name="csv" accept=".csv" required><br><br>
+
+        <label>Photos (named by barcode):</label><br>
+        <input type="file" name="photos" accept="image/*" multiple required><br><br>
+
+        <button type="submit">Upload Bulk Visitors</button>
+      </form>
+    </section>
+  </main> -->
+
+    <main class="dashboard-home">
+        <div class="card-container" style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;">
+
+            <section class="card" style="flex: 1; min-width: 300px; max-width: 500px;">
+                <h2>➕ Add Single Visitor</h2>
+                <form id="singleVisitorForm" enctype="multipart/form-data">
+                    <input type="text" name="barcode" placeholder="Barcode" required><br><br>
+                    <input type="text" name="name" placeholder="Name" required><br><br>
+                    <input type="text" name="mobile" placeholder="Mobile Number" required><br><br>
+                    <input type="email" name="email" placeholder="Email (optional)"><br><br>
+                    <input type="file" name="photo" accept="image/*" required><br><br>
+                    <button type="submit">Add Visitor</button>
+                </form>
+            </section>
+
+            <section class="card" style="flex: 1; min-width: 300px; max-width: 500px;">
+                <h2>📦 Bulk Upload Visitors</h2>
+                <form id="bulkUploadForm" enctype="multipart/form-data">
+                    <label>CSV File:</label><br>
+                    <input type="file" name="csv" accept=".csv" required><br><br>
+
+                    <label>Photos (named by barcode):</label><br>
+                    <input type="file" name="photos" accept="image/*" multiple required><br><br>
+
+                    <button type="submit">Upload Bulk Visitors</button>
+                </form>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Developed by Durgesh Borole | Raghvendra Gupta | Rahul Baravkar | Bhogesh Allapure</p>
+    </footer>
+
+    <script>
+        document.getElementById("singleVisitorForm").onsubmit = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const res = await fetch("http://localhost:5000/add-visitor", {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+            alert(data.message || "Failed to add visitor");
+        };
+
+        document.getElementById("bulkUploadForm").onsubmit = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const res = await fetch("http://localhost:5000/bulk-add-visitors", {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+            alert(`✅ ${data.success ? data.insertedCount + " visitors inserted." : "Bulk upload failed."}`);
+        };
+    </script>
+</body>
+
+</html>

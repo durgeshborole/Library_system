@@ -221,4 +221,33 @@ async function updateAutoExit() {
   }
  }
 
-  
+async function loadMonthlyAwards() {
+  const resultBox = document.getElementById("awardResults");
+  resultBox.innerHTML = "⏳ Loading...";
+
+  try {
+    const res = await fetch("http://localhost:5000/admin/monthly-awards");
+    const data = await res.json();
+
+    if (data.error) {
+      resultBox.innerHTML = "❌ Failed to load awards.";
+      return;
+    }
+
+    const student = data.topStudent
+      ? `🏅 <b>${data.topStudent.name}</b> (Visits: ${data.topStudent.visits})`
+      : "No student data.";
+
+    const department = data.topDepartment
+      ? `🏢 <b>${data.topDepartment.name}</b> (Visits: ${data.topDepartment.visits})`
+      : "No department data.";
+
+    resultBox.innerHTML = `
+      <p><strong>Top Student:</strong> ${student}</p>
+      <p><strong>Top Department:</strong> ${department}</p>
+    `;
+  } catch (err) {
+    console.error("Error fetching awards:", err);
+    resultBox.innerHTML = "❌ Server error.";
+  }
+}

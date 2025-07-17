@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel - Library System</title>
   <link rel="stylesheet" href="style.css" />
- </head>
+</head>
+
 <body>
   <header class="mit-header">
-    <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
+    <img src="/Backend/public/images/mit-corer.jpg" alt="MITCORER Logo" class="mit-logo" />
     <div class="header-text">
       <h1>Admin Control Panel</h1>
       <p>MIT College of Railway Engineering & Research</p>
@@ -25,7 +27,7 @@
     </ul>
   </nav>
 
-  
+
 
   <main class="dashboard">
     <section class="card">
@@ -55,7 +57,7 @@
     <section class="card">
       <h3>👤 Registered Users</h3>
       <p>Manage students and staff registered in the system.</p>
-      <button onclick="location.href='registered.html'">Manage Users</button>
+      <button onclick="location.href='add-users.html'">Manage Users</button>
     </section>
 
     <section class="card">
@@ -71,7 +73,7 @@
       <input type="file" id="photoFile" accept="image/*" />
       <button onclick="uploadPhoto()">Upload Photo</button>
     </section>
-    
+
     <section class="card">
       <h3>🖼️ Bulk Upload Visitor Photos</h3>
       <input type="file" id="bulkPhotoFiles" accept="image/*" multiple />
@@ -84,10 +86,25 @@
         <li>Loading notices...</li>
       </ul>
     </section>
-    
-    
-    
+
+    <section class="card">
+      <h3>🏆 Monthly Awards</h3>
+      <p>See the most regular visitor and the most active department this month.</p>
+      <button onclick="loadMonthlyAwards()">Refresh Awards</button>
+      <div id="awardResults" style="margin-top: 10px;">
+        <p>Loading...</p>
+      </div>
+    </section>
+
+   
+
+
+
+
+
+
   </main>
+
 
   <footer class="footer">
     <p>Admin Dashboard | Developed by MITCORER Team</p>
@@ -95,4 +112,5 @@
 
   <script src="admin.js"></script>
 </body>
+
 </html>

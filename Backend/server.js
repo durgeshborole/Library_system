@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
+const nodemailer = require("nodemailer");
 
 const PORT = 5000;
 const cron = require('node-cron');
@@ -15,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 
 // MongoDB connection
@@ -27,9 +28,11 @@ mongoose.connect('mongodb+srv://durgeshborole:u6Ihi1GAKF84YIP1@system.8xuulfp.mo
 const visitorSchema = new mongoose.Schema({
   barcode: String,
   name: String,
+  mobile: String,
+  email: String,
   photoUrl: String,
   year: String,
-  department: String,
+  department: String
 });
 
 const logSchema = new mongoose.Schema({
@@ -55,26 +58,6 @@ const Visitor = mongoose.model('Visitor', visitorSchema);
 const Log = mongoose.model('Log', logSchema);
 
 const { spawn } = require("child_process");
-
-function startPythonServer() {
-  const python = spawn("python", ["app.py"]);
-
-  python.stdout.on("data", (data) => {
-    console.log(`[Flask] ${data}`);
-  });
-
-  python.stderr.on("data", (data) => {
-    console.error(`[Flask ERROR] ${data}`);
-  });
-
-  python.on("close", (code) => {
-    console.log(`[Flask] exited with code ${code}`);
-  });
-}
-
-// Start Python Flask server
-startPythonServer();
-
 
 function decodeBarcode(barcode) {
   if (!barcode || barcode.length < 5) {
@@ -446,6 +429,50 @@ app.post('/bulk-upload-photos', upload.array('photos', 500), async (req, res) =>
   }
 });
 
+// app.get('/students', async (req, res) => {
+//   const page = parseInt(req.query.page) || 1;
+//   const limit = parseInt(req.query.limit) || 20;
+//   const skip = (page - 1) * limit;
+//   const search = req.query.search?.toLowerCase() || "";
+
+//   try {
+//     const query = search
+//       ? {
+//           $or: [
+//             { name: { $regex: search, $options: "i" } },
+//             { barcode: { $regex: search, $options: "i" } }
+//           ]
+//         }
+//       : {};
+
+//     const total = await Visitor.countDocuments(query);
+//     const visitors = await Visitor.find(query).skip(skip).limit(limit);
+
+//     const students = visitors.map(visitor => {
+//       const decoded = decodeBarcode(visitor.barcode || "");
+//       return {
+//         name: visitor.name || "No Name",
+//         barcode: visitor.barcode || "No Barcode",
+//         photoUrl: `/photo/${visitor.barcode}`,
+//         department: decoded.department || "Unknown",
+//         year: decoded.year || "Unknown",
+//         email: visitor.email || "N/A",
+//         mobile: visitor.mobile || "N/A"
+//       };
+//     });
+
+//     res.status(200).json({
+//       students,
+//       totalPages: Math.ceil(total / limit),
+//       currentPage: page
+//     });
+//   } catch (err) {
+//     console.error("❌ Error in /students:", err);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
+
+
 app.get('/students', async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
@@ -455,11 +482,11 @@ app.get('/students', async (req, res) => {
   try {
     const query = search
       ? {
-        $or: [
-          { name: { $regex: search, $options: "i" } },
-          { barcode: { $regex: search, $options: "i" } }
-        ]
-      }
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { barcode: { $regex: search, $options: "i" } }
+          ]
+        }
       : {};
 
     const total = await Visitor.countDocuments(query);
@@ -470,9 +497,11 @@ app.get('/students', async (req, res) => {
       return {
         name: visitor.name || "No Name",
         barcode: visitor.barcode || "No Barcode",
-        photoUrl: `/photo/${visitor.barcode}`,
+        photoBase64: visitor.photoUrl || null, // Direct photo from MongoDB
         department: decoded.department || "Unknown",
-        year: decoded.year || "Unknown"
+        year: decoded.year || "Unknown",
+        email: visitor.email || "N/A",
+        mobile: visitor.mobile || "N/A"
       };
     });
 
@@ -507,13 +536,13 @@ app.get('/photo/:barcode', async (req, res) => {
 
   if (!visitor || !visitor.photoUrl || !visitor.photoUrl.startsWith('data:image')) {
     console.log("❌ Invalid photoUrl. Sending default image.");
-    return res.sendFile(__dirname + '/public/images/default.jpg');
+    return res.sendFile(__dirname + '/Backend/public/images/default.jpg');
   }
 
   const match = visitor.photoUrl.match(/^data:(.+);base64,(.+)$/);
   if (!match) {
     console.log("❌ Base64 match failed. Sending default image.");
-    return res.sendFile(__dirname + '/public/images/default.jpg');
+    return res.sendFile(__dirname + '/Backend/public/images/default.jpg');
   }
 
   const mimeType = match[1];
@@ -526,176 +555,264 @@ app.get('/photo/:barcode', async (req, res) => {
 
 
 // Get all face descriptors (frontend fetches this once)
-app.get('/api/face-descriptors', async (req, res) => {
-  try {
-    const visitors = await Visitor.find({ photoUrl: { $exists: true } });
-    const results = [];
-
-    for (const visitor of visitors) {
-      const match = visitor.photoUrl.match(/^data:(.+);base64,(.+)$/);
-      if (!match) continue;
-
-      results.push({
-        barcode: visitor.barcode,
-        descriptor: null  // This placeholder assumes you pre-process and cache descriptors
-      });
-    }
-
-    res.json(results);  // You should pre-compute descriptors server-side in production
-  } catch (err) {
-    console.error("❌ Failed to get descriptors:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
 
 // Add this new endpoint to your server.js file after the existing endpoints
 
+// app.post('/face-entry', async (req, res) => {
+//   try {
+//     const { image } = req.body;
+
+//     if (!image) {
+//       return res.status(400).json({ status: "error", message: "No image provided" });
+//     }
+
+//     console.log("📸 Face verification request received");
+
+//     // Fix: Use the correct Python server port (5001 as per app.py)
+//     const response = await fetch("http://localhost:5001/recognize-face", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ image })
+//     });
+
+//     if (!response.ok) {
+//       throw new Error(`Python server responded with ${response.status}`);
+//     }
+
+//     const data = await response.json();
+//     console.log("🔍 Python response:", data);
+
+//     const today = getCurrentDateString();
+
+//     if (data.result === "match") {
+//       // Face matched - create log entry
+//       const visitor = await Visitor.findOne({ barcode: data.barcode });
+//       if (!visitor) {
+//         return res.status(404).json({ status: "error", message: "Visitor not found" });
+//       }
+
+//       const decoded = decodeBarcode(data.barcode);
+//       const existing = await Log.findOne({ barcode: data.barcode, date: today, exitTime: null });
+
+//       if (existing) {
+//         // Person is already inside - mark exit
+//         existing.exitTime = new Date();
+//         await existing.save();
+//         return res.status(200).json({ 
+//           status: "matched", 
+//           action: "exit",
+//           name: visitor.name,
+//           message: `Exit recorded for ${visitor.name}` 
+//         });
+//       } else {
+//         // Person not inside - mark entry
+//         const newEntry = new Log({
+//           barcode: data.barcode,
+//           name: visitor.name,
+//           department: decoded.department,
+//           year: decoded.year,
+//           designation: decoded.designation,
+//           date: today
+//         });
+
+//         await newEntry.save();
+//         return res.status(200).json({ 
+//           status: "matched", 
+//           action: "entry",
+//           name: visitor.name,
+//           message: `Entry recorded for ${visitor.name}` 
+//         });
+//       }
+//     } else if (data.result === "unrecognized") {
+//       // Unknown face detected - log as unknown
+//       const unknownEntry = new Log({
+//         barcode: "unknown_face",
+//         name: "Unknown Face",
+//         department: "Unknown",
+//         year: "-",
+//         designation: "Unknown",
+//         date: today
+//       });
+
+//       await unknownEntry.save();
+//       return res.status(200).json({ 
+//         status: "unrecognized", 
+//         message: "Unknown face detected and logged" 
+//       });
+//     } else {
+//       return res.status(400).json({ 
+//         status: "error", 
+//         message: data.message || "Face recognition failed" 
+//       });
+//     }
+
+
+
+//   } catch (error) {
+//     console.error("❌ Face entry error:", error);
+
+//     // Better error handling with specific error messages
+//     if (error.code === 'ECONNREFUSED') {
+//       return res.status(500).json({ 
+//         status: "error", 
+//         message: "Python face recognition server is not running" 
+//       });
+//     } else if (error.message.includes('fetch')) {
+//       return res.status(500).json({ 
+//         status: "error", 
+//         message: "Failed to connect to face recognition service" 
+//       });
+//     } else {
+//       return res.status(500).json({ 
+//         status: "error", 
+//         message: "Server error during face recognition: " + error.message 
+//       });
+//     }
+//   }
+// });
+
+require("dotenv").config();
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
 app.post('/face-entry', async (req, res) => {
   try {
-    const { image } = req.body;
-    
-    if (!image) {
-      return res.status(400).json({ status: "error", message: "No image provided" });
+    // 📧 Send Email
+    try {
+      const email = visitor.email || "default.email@example.com";
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Entry Log Notification",
+        text: `${actionMessage} on ${today}`
+      });
+      console.log(`📧 Email sent to ${email}`);
+    } catch (emailErr) {
+      console.error("❌ Email error:", emailErr.message);
     }
+  } catch (error) {
+    console.error("❌ entry error:", error);
+  }
+});
 
-    console.log("📸 Face verification request received");
 
-    // Fix: Use the correct Python server port (5001 as per app.py)
-    const response = await fetch("http://localhost:5001/recognize-face", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image })
+app.get('/admin/monthly-awards', async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    // Fetch logs for current month
+    const logs = await Log.find({
+      entryTime: { $gte: startOfMonth, $lte: endOfMonth },
+      designation: "Student"
     });
 
-    if (!response.ok) {
-      throw new Error(`Python server responded with ${response.status}`);
-    }
+    // Count visits per student
+    const studentVisits = {};
+    const deptVisits = {};
 
-    const data = await response.json();
-    console.log("🔍 Python response:", data);
-
-    const today = getCurrentDateString();
-
-    if (data.result === "match") {
-      // Face matched - create log entry
-      const visitor = await Visitor.findOne({ barcode: data.barcode });
-      if (!visitor) {
-        return res.status(404).json({ status: "error", message: "Visitor not found" });
+    for (const log of logs) {
+      if (!studentVisits[log.barcode]) {
+        studentVisits[log.barcode] = { count: 0, name: log.name };
       }
+      studentVisits[log.barcode].count++;
 
-      const decoded = decodeBarcode(data.barcode);
-      const existing = await Log.findOne({ barcode: data.barcode, date: today, exitTime: null });
-
-      if (existing) {
-        // Person is already inside - mark exit
-        existing.exitTime = new Date();
-        await existing.save();
-        return res.status(200).json({ 
-          status: "matched", 
-          action: "exit",
-          name: visitor.name,
-          message: `Exit recorded for ${visitor.name}` 
-        });
-      } else {
-        // Person not inside - mark entry
-        const newEntry = new Log({
-          barcode: data.barcode,
-          name: visitor.name,
-          department: decoded.department,
-          year: decoded.year,
-          designation: decoded.designation,
-          date: today
-        });
-
-        await newEntry.save();
-        return res.status(200).json({ 
-          status: "matched", 
-          action: "entry",
-          name: visitor.name,
-          message: `Entry recorded for ${visitor.name}` 
-        });
+      if (log.department) {
+        deptVisits[log.department] = (deptVisits[log.department] || 0) + 1;
       }
-    } else if (data.result === "unrecognized") {
-      // Unknown face detected - log as unknown
-      const unknownEntry = new Log({
-        barcode: "unknown_face",
-        name: "Unknown Face",
-        department: "Unknown",
-        year: "-",
-        designation: "Unknown",
-        date: today
-      });
-
-      await unknownEntry.save();
-      return res.status(200).json({ 
-        status: "unrecognized", 
-        message: "Unknown face detected and logged" 
-      });
-    } else {
-      return res.status(400).json({ 
-        status: "error", 
-        message: data.message || "Face recognition failed" 
-      });
     }
 
-  } catch (error) {
-    console.error("❌ Face entry error:", error);
-    
-    // Better error handling with specific error messages
-    if (error.code === 'ECONNREFUSED') {
-      return res.status(500).json({ 
-        status: "error", 
-        message: "Python face recognition server is not running" 
-      });
-    } else if (error.message.includes('fetch')) {
-      return res.status(500).json({ 
-        status: "error", 
-        message: "Failed to connect to face recognition service" 
-      });
-    } else {
-      return res.status(500).json({ 
-        status: "error", 
-        message: "Server error during face recognition: " + error.message 
-      });
-    }
+    // Top student
+    const topStudent = Object.entries(studentVisits)
+      .sort((a, b) => b[1].count - a[1].count)[0];
+
+    // Top department
+    const topDept = Object.entries(deptVisits)
+      .sort((a, b) => b[1] - a[1])[0];
+
+    res.status(200).json({
+      topStudent: topStudent ? { barcode: topStudent[0], name: topStudent[1].name, visits: topStudent[1].count } : null,
+      topDepartment: topDept ? { name: topDept[0], visits: topDept[1] } : null
+    });
+
+  } catch (err) {
+    console.error("❌ Error in monthly awards:", err);
+    res.status(500).json({ error: "Failed to generate awards" });
   }
 });
 
-// Fix 3: Add a health check endpoint to verify Python server connection
-app.get('/check-python-server', async (req, res) => {
+app.post('/add-visitor', upload.single('photo'), async (req, res) => {
+  const { barcode, name, mobile, email } = req.body;
+  const file = req.file;
+
+  if (!barcode || !name || !mobile || !file) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  const photoUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+
   try {
-    const response = await fetch("http://localhost:5001/health");
-    const data = await response.json();
-    res.json({ status: "connected", python_server: data });
-  } catch (error) {
-    res.status(500).json({ status: "disconnected", error: error.message });
+    const visitor = new Visitor({ barcode, name, mobile, email, photoUrl });
+    await visitor.save();
+    res.status(200).json({ message: "✅ Visitor added" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "❌ Error saving visitor" });
   }
 });
 
-// Fix 4: Update the Python server startup function
-function startPythonServer() {
-  const python = spawn("python", ["app.py"]);
+const csv = require("csv-parser");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 
-  python.stdout.on("data", (data) => {
-    console.log(`[Flask] ${data}`);
-  });
+const tempUpload = multer({ dest: os.tmpdir() });
 
-  python.stderr.on("data", (data) => {
-    console.error(`[Flask ERROR] ${data}`);
-  });
+app.post('/bulk-add-visitors', tempUpload.fields([{ name: "csv" }, { name: "photos" }]), async (req, res) => {
+  try {
+    const csvFile = req.files["csv"]?.[0];
+    const photoFiles = req.files["photos"] || [];
 
-  python.on("close", (code) => {
-    console.log(`[Flask] exited with code ${code}`);
-    if (code !== 0) {
-      console.log("🔄 Restarting Python server...");
-      setTimeout(startPythonServer, 5000); // Restart after 5 seconds
+    if (!csvFile || photoFiles.length === 0) {
+      return res.status(400).json({ success: false, message: "Missing files" });
     }
-  });
 
-  python.on("error", (error) => {
-    console.error(`[Flask SPAWN ERROR] ${error}`);
-  });
-}
+    const photoMap = {};
+    photoFiles.forEach(file => {
+      const key = path.parse(file.originalname).name.trim();
+      photoMap[key] = `data:${file.mimetype};base64,${fs.readFileSync(file.path).toString('base64')}`;
+    });
+
+    const inserted = [];
+
+    fs.createReadStream(csvFile.path)
+      .pipe(csv())
+      .on("data", async (row) => {
+        const { barcode, name, mobile, email } = row;
+        const photoUrl = photoMap[barcode];
+
+        if (barcode && name && mobile && photoUrl) {
+          const newVisitor = new Visitor({ barcode, name, mobile, email, photoUrl });
+          await newVisitor.save();
+          inserted.push(barcode);
+        }
+      })
+      .on("end", () => {
+        res.status(200).json({ success: true, insertedCount: inserted.length });
+      });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
 
 
 

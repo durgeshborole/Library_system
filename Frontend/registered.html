@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registered Visitors</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Header and Navbar -->
+  <header class="mit-header">
+    <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
+    <div class="header-text">
+      <p class="sub-text">Under the aegis of MAEER's MIT Pune</p>
+      <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
+    </div>
+  </header>
+
+  <nav class="navbar">
+    <div class="logo">Visitors</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="log.html">Logs</a></li>
+      <li><a href="analysis.html">Analysis</a></li>
+      <li><a href="admin.html">Admin Panel</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="visitor-list-container">
+    <h2>📘 Registered Visitors</h2>
+
+    <input id="searchInput" type="text" placeholder="🔍 Search by name or barcode..." class="search-input"/>
+
+    <div id="visitorList" class="visitor-list">
+      <p>Loading visitors...</p>
+    </div>
+
+    <div class="pagination">
+      <button id="prevPage">⬅ Prev</button>
+      <span id="pageInfo">Page 1</span>
+      <button id="nextPage">Next ➡</button>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Developed by Team MITCORER</p>
+  </footer>
+
+  <script>
+    let currentPage = 1;
+    const limit = 20;
+    let totalPages = 1;
+
+    async function loadVisitors(page = 1, search = "") {
+      const container = document.getElementById("visitorList");
+      const pageInfo = document.getElementById("pageInfo");
+
+      container.innerHTML = "<p>Loading...</p>";
+
+      try {
+        const res = await fetch(`http://localhost:5000/students?page=${page}&limit=${limit}&search=${search}`);
+        const data = await res.json();
+
+        const visitors = data.students || [];
+        totalPages = data.totalPages || 1;
+        currentPage = data.currentPage || 1;
+
+        if (visitors.length === 0) {
+          container.innerHTML = "<p>No matching visitors found.</p>";
+          pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+          return;
+        }
+
+        container.innerHTML = "";
+        visitors.forEach(visitor => {
+          const div = document.createElement("div");
+          div.className = "visitor-card-full";
+          div.innerHTML = `
+            <img src="${visitor.photoBase64 || '/Backend/public/images/default.jpg'}" alt="Photo of ${visitor.name}" class="visitor-photo">
+
+            <div class="visitor-details">
+              <h3>${visitor.name}</h3>
+              <p><strong>Barcode:</strong> ${visitor.barcode}</p>
+              <p><strong>Email:</strong> ${visitor.email}</p>
+              <p><strong>Mobile:</strong> ${visitor.mobile}</p>
+              <p><strong>Department:</strong> ${visitor.department}</p>
+              <p><strong>Year:</strong> ${visitor.year}</p>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = "<p>❌ Failed to load visitors.</p>";
+      }
+    }
+
+    document.getElementById("prevPage").onclick = () => {
+      if (currentPage > 1) loadVisitors(currentPage - 1, document.getElementById("searchInput").value);
+    };
+
+    document.getElementById("nextPage").onclick = () => {
+      if (currentPage < totalPages) loadVisitors(currentPage + 1, document.getElementById("searchInput").value);
+    };
+
+    document.getElementById("searchInput").addEventListener("input", () => {
+      loadVisitors(1, document.getElementById("searchInput").value);
+    });
+
+    window.onload = () => loadVisitors(1);
+  </script>
+</body>
+</html>
