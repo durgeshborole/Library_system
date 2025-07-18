@@ -4,36 +4,86 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 const nodemailer = require("nodemailer");
-
+const csv = require("csv-parser");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const PORT = 5000;
 const cron = require('node-cron');
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
 
+const tempUpload = multer({ dest: os.tmpdir() });
+const bcrypt = require('bcrypt');
+
+
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+
+
+
+
+const { spawn } = require("child_process");
 
 // Middleware setup
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // MongoDB connection
 mongoose.connect('mongodb+srv://durgeshborole:u6Ihi1GAKF84YIP1@system.8xuulfp.mongodb.net/library?retryWrites=true&w=majority&appName=System', {
 }).then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
+
+
+
 // Schemas
-const visitorSchema = new mongoose.Schema({
-  barcode: String,
-  name: String,
-  mobile: String,
-  email: String,
-  photoUrl: String,
-  year: String,
-  department: String
+
+const AdminSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true,lowercase: true },
+  password: { type: String, required: true }
 });
+
+
+
+const HodSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true,lowercase: true },
+  password: { type: String, required: true },
+  department: { type: String, required: true }
+});
+
+
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+
+
+
+const visitorSchema = new mongoose.Schema({
+  name: String,
+  barcode: String,
+  email: String,
+  mobile: String,
+  department: String,
+  year: String,
+  photoUrl: String, // OR photoBase64: String
+});
+
+
 
 const logSchema = new mongoose.Schema({
   barcode: String,
@@ -46,18 +96,21 @@ const logSchema = new mongoose.Schema({
   exitTime: Date,
 });
 
+
+
 const noticeSchema = new mongoose.Schema({
   text: String,
   timestamp: { type: Date, default: Date.now }
 });
-
 const Notice = mongoose.model('Notice', noticeSchema);
-
-
+const Admin = mongoose.model("Admin", AdminSchema);
+const Hod = mongoose.model("Hod", HodSchema);
+const upload = multer({ storage });
 const Visitor = mongoose.model('Visitor', visitorSchema);
 const Log = mongoose.model('Log', logSchema);
 
-const { spawn } = require("child_process");
+
+
 
 function decodeBarcode(barcode) {
   if (!barcode || barcode.length < 5) {
@@ -361,11 +414,6 @@ app.delete('/admin/notices/:id', async (req, res) => {
   }
 });
 
-
-
-
-
-
 app.post('/upload-photo', upload.single('photo'), async (req, res) => {
   const barcode = req.body.barcode;
   if (!barcode || !req.file) {
@@ -429,49 +477,6 @@ app.post('/bulk-upload-photos', upload.array('photos', 500), async (req, res) =>
   }
 });
 
-// app.get('/students', async (req, res) => {
-//   const page = parseInt(req.query.page) || 1;
-//   const limit = parseInt(req.query.limit) || 20;
-//   const skip = (page - 1) * limit;
-//   const search = req.query.search?.toLowerCase() || "";
-
-//   try {
-//     const query = search
-//       ? {
-//           $or: [
-//             { name: { $regex: search, $options: "i" } },
-//             { barcode: { $regex: search, $options: "i" } }
-//           ]
-//         }
-//       : {};
-
-//     const total = await Visitor.countDocuments(query);
-//     const visitors = await Visitor.find(query).skip(skip).limit(limit);
-
-//     const students = visitors.map(visitor => {
-//       const decoded = decodeBarcode(visitor.barcode || "");
-//       return {
-//         name: visitor.name || "No Name",
-//         barcode: visitor.barcode || "No Barcode",
-//         photoUrl: `/photo/${visitor.barcode}`,
-//         department: decoded.department || "Unknown",
-//         year: decoded.year || "Unknown",
-//         email: visitor.email || "N/A",
-//         mobile: visitor.mobile || "N/A"
-//       };
-//     });
-
-//     res.status(200).json({
-//       students,
-//       totalPages: Math.ceil(total / limit),
-//       currentPage: page
-//     });
-//   } catch (err) {
-//     console.error("❌ Error in /students:", err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
-
 
 app.get('/students', async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -482,11 +487,11 @@ app.get('/students', async (req, res) => {
   try {
     const query = search
       ? {
-          $or: [
-            { name: { $regex: search, $options: "i" } },
-            { barcode: { $regex: search, $options: "i" } }
-          ]
-        }
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { barcode: { $regex: search, $options: "i" } }
+        ]
+      }
       : {};
 
     const total = await Visitor.countDocuments(query);
@@ -516,6 +521,94 @@ app.get('/students', async (req, res) => {
   }
 });
 
+
+// ===================================================================
+// START: NEW ENDPOINTS FOR UPDATING A VISITOR
+// ===================================================================
+
+
+
+// GET a single student by barcode
+app.get('/api/students/:barcode', async (req, res) => {
+  try {
+    const { barcode } = req.params;
+    const student = await Visitor.findOne({ barcode });
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Visitor not found" });
+    }
+
+    res.status(200).json({ success: true, student });
+  } catch (err) {
+    console.error("❌ Error fetching visitor:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+
+
+// UPDATE a visitor's details by barcode
+app.put('/api/students/:barcode', upload.single('photo'), async (req, res) => {
+  try {
+    const { barcode } = req.params;
+
+    const updateData = {
+      name: req.body.name,
+      email: req.body.email,
+      mobile: req.body.mobile,
+      department: req.body.department,
+      year: req.body.year,
+    };
+
+    if (req.file) {
+      updateData.photoUrl = `/uploads/${req.file.filename}`;
+    }
+
+    const updated = await Visitor.findOneAndUpdate(
+      { barcode },
+      updateData,
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Visitor not found" });
+    }
+
+    res.json({ success: true, updated });
+  } catch (err) {
+    console.error("❌ Error updating visitor:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// DELETE a visitor by barcode
+app.delete('/api/students/:barcode', async (req, res) => {
+  const { barcode } = req.params;
+  console.log("🔍 DELETE request for barcode:", barcode);
+
+  try {
+    const deleted = await Visitor.findOneAndDelete({ barcode });
+
+    if (!deleted) {
+      console.log("❌ Visitor not found for deletion");
+      return res.status(404).json({ success: false, message: "Visitor not found" });
+    }
+
+    console.log("✅ Visitor deleted:", deleted.name);
+    res.status(200).json({ success: true, message: "Visitor deleted successfully" });
+  } catch (err) {
+    console.error("❌ Server error during deletion:", err);
+    res.status(500).json({ success: false, message: "Server error during deletion" });
+  }
+});
+
+
+
+
+
+// ===================================================================
+// END: NEW ENDPOINTS FOR UPDATING A VISITOR
+// ===================================================================
 
 
 app.get('/debug-visitors', async (req, res) => {
@@ -552,124 +645,6 @@ app.get('/photo/:barcode', async (req, res) => {
   res.setHeader('Content-Type', mimeType);
   res.send(buffer);
 });
-
-
-// Get all face descriptors (frontend fetches this once)
-
-// Add this new endpoint to your server.js file after the existing endpoints
-
-// app.post('/face-entry', async (req, res) => {
-//   try {
-//     const { image } = req.body;
-
-//     if (!image) {
-//       return res.status(400).json({ status: "error", message: "No image provided" });
-//     }
-
-//     console.log("📸 Face verification request received");
-
-//     // Fix: Use the correct Python server port (5001 as per app.py)
-//     const response = await fetch("http://localhost:5001/recognize-face", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ image })
-//     });
-
-//     if (!response.ok) {
-//       throw new Error(`Python server responded with ${response.status}`);
-//     }
-
-//     const data = await response.json();
-//     console.log("🔍 Python response:", data);
-
-//     const today = getCurrentDateString();
-
-//     if (data.result === "match") {
-//       // Face matched - create log entry
-//       const visitor = await Visitor.findOne({ barcode: data.barcode });
-//       if (!visitor) {
-//         return res.status(404).json({ status: "error", message: "Visitor not found" });
-//       }
-
-//       const decoded = decodeBarcode(data.barcode);
-//       const existing = await Log.findOne({ barcode: data.barcode, date: today, exitTime: null });
-
-//       if (existing) {
-//         // Person is already inside - mark exit
-//         existing.exitTime = new Date();
-//         await existing.save();
-//         return res.status(200).json({ 
-//           status: "matched", 
-//           action: "exit",
-//           name: visitor.name,
-//           message: `Exit recorded for ${visitor.name}` 
-//         });
-//       } else {
-//         // Person not inside - mark entry
-//         const newEntry = new Log({
-//           barcode: data.barcode,
-//           name: visitor.name,
-//           department: decoded.department,
-//           year: decoded.year,
-//           designation: decoded.designation,
-//           date: today
-//         });
-
-//         await newEntry.save();
-//         return res.status(200).json({ 
-//           status: "matched", 
-//           action: "entry",
-//           name: visitor.name,
-//           message: `Entry recorded for ${visitor.name}` 
-//         });
-//       }
-//     } else if (data.result === "unrecognized") {
-//       // Unknown face detected - log as unknown
-//       const unknownEntry = new Log({
-//         barcode: "unknown_face",
-//         name: "Unknown Face",
-//         department: "Unknown",
-//         year: "-",
-//         designation: "Unknown",
-//         date: today
-//       });
-
-//       await unknownEntry.save();
-//       return res.status(200).json({ 
-//         status: "unrecognized", 
-//         message: "Unknown face detected and logged" 
-//       });
-//     } else {
-//       return res.status(400).json({ 
-//         status: "error", 
-//         message: data.message || "Face recognition failed" 
-//       });
-//     }
-
-
-
-//   } catch (error) {
-//     console.error("❌ Face entry error:", error);
-
-//     // Better error handling with specific error messages
-//     if (error.code === 'ECONNREFUSED') {
-//       return res.status(500).json({ 
-//         status: "error", 
-//         message: "Python face recognition server is not running" 
-//       });
-//     } else if (error.message.includes('fetch')) {
-//       return res.status(500).json({ 
-//         status: "error", 
-//         message: "Failed to connect to face recognition service" 
-//       });
-//     } else {
-//       return res.status(500).json({ 
-//         status: "error", 
-//         message: "Server error during face recognition: " + error.message 
-//       });
-//     }
-//   }
-// });
 
 require("dotenv").config();
 
@@ -768,12 +743,7 @@ app.post('/add-visitor', upload.single('photo'), async (req, res) => {
   }
 });
 
-const csv = require("csv-parser");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 
-const tempUpload = multer({ dest: os.tmpdir() });
 
 app.post('/bulk-add-visitors', tempUpload.fields([{ name: "csv" }, { name: "photos" }]), async (req, res) => {
   try {
@@ -815,8 +785,146 @@ app.post('/bulk-add-visitors', tempUpload.fields([{ name: "csv" }, { name: "phot
 });
 
 
+// Login page start
+// Register
+app.post("/api/register", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const existing = await Admin.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ success: false, message: "Email already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newAdmin = new Admin({ email, password: hashedPassword });
+    await newAdmin.save();
+
+    res.status(201).json({ success: true, message: "Registered successfully" });
+  } catch (err) {
+    console.error("❌ Registration error:", err);
+    res.status(500).json({ success: false, message: "Server error during registration" });
+  }
+});
+
+// Login Admin
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ success: false, message: "Email and password are required." });
+    }
+    const admin = await Admin.findOne({ email });
+
+    if (!admin) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    const match = await bcrypt.compare(password, admin.password);
+    if (!match) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    res.status(500).json({ success: false, message: "Server error during login" });
+  }
+});
+
+// Register Admin
+app.post("/api/register", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ success: false, message: "Email and password are required." });
+    }
+
+    const existing = await Admin.findOne({ email });
+    if (existing) {
+      return res.status(409).json({ success: false, message: "An account with this email already exists." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newAdmin = new Admin({ email, password: hashedPassword });
+    await newAdmin.save();
+
+    res.status(201).json({ success: true, message: "Registered successfully" });
+  } catch (err) {
+    console.error("❌ Registration error:", err);
+    res.status(500).json({ success: false, message: "Server error during registration" });
+  }
+});
 
 
+// Password Reset for Admin
+app.post("/api/reset-password", async (req, res) => {
+    const { email, currentPassword, newPassword } = req.body;
+
+    if (!email || !currentPassword || !newPassword) {
+        return res.status(400).json({ success: false, message: "All fields are required." });
+    }
+
+    try {
+        const admin = await Admin.findOne({ email });
+        if (!admin) {
+            return res.status(404).json({ success: false, message: "Account not found." });
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, admin.password);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Incorrect current password." });
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        admin.password = hashedNewPassword;
+        await admin.save();
+
+        res.status(200).json({ success: true, message: "Password updated successfully!" });
+    } catch (err) {
+        console.error("❌ Password reset error:", err);
+        res.status(500).json({ success: false, message: "Server error during password reset." });
+    }
+});
+
+
+app.post("/api/hod-login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const hod = await Hod.findOne({ email });
+    if (!hod) return res.status(401).json({ success: false, message: "Invalid credentials" });
+
+    const match = await bcrypt.compare(password, hod.password);
+    if (!match) return res.status(401).json({ success: false, message: "Invalid credentials" });
+
+    res.json({ success: true, department: hod.department });
+  } catch (err)
+  {
+    console.error("❌ HOD login error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Route to register a new HOD
+app.post("/api/register-hod", async (req, res) => {
+  const { email, password, department } = req.body;
+   if (!email || !password || !department) {
+        return res.status(400).json({ success: false, message: "Email, password, and department are required." });
+    }
+  try {
+    const existing = await Hod.findOne({ email });
+    if (existing) {
+      return res.status(409).json({ success: false, message: "HOD with this email already exists" });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newHod = new Hod({ email, password: hashedPassword, department });
+    await newHod.save();
+    res.status(201).json({ success: true, message: "✅ HOD registered successfully" });
+  } catch (err) {
+    console.error("❌ Register HOD error:", err);
+    res.status(500).json({ success: false, message: "Server error during HOD registration." });
+  }
+});
 // Starts the server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
