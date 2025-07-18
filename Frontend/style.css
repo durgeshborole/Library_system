@@ -490,7 +490,7 @@ th, td {
 
 .visitor-card-full {
   display: flex;
-  align-items: stretch; /* force equal height */
+  align-items: center; /* Vertically center items */
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -547,4 +547,168 @@ th, td {
 .pagination span {
   font-weight: bold;
   font-size: 16px;
+}
+
+.update-form-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 30px 40px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.update-form-container h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 30px;
+}
+
+.update-form .form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 40px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #444;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.form-group input[readonly] {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.form-photo-area {
+  text-align: center;
+}
+
+.form-photo-area label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #444;
+}
+
+#photoPreview {
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+  margin-bottom: 10px;
+}
+
+#photo {
+  font-size: 14px;
+}
+
+.form-actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.btn-submit, .btn-cancel {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+.btn-submit {
+  background-color: #e50914;
+  color: white;
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Responsive adjustments for form */
+@media (max-width: 768px) {
+  .update-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-photo-area {
+    order: -1; /* Move photo to the top on mobile */
+    margin-bottom: 30px;
+  }
+}
+
+/* Footer */
+.footer {
+  background: #e50914;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  font-size: 14px;
+  margin-top: 40px;
+}
+
+/* Dropdown for 3-dot menu */
+.visitor-actions {
+  position: relative;
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.action-dropdown {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  display: none;
+  flex-direction: column;
+  min-width: 120px;
+  z-index: 100;
+}
+
+.action-dropdown a {
+  padding: 10px 15px;
+  text-decoration: none;
+  color: #333;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.action-dropdown a:hover {
+  background-color: #f0f0f0;
+}
+
+/* Show class to make it visible */
+.action-dropdown.show {
+  display: flex;
 }

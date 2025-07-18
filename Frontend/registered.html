@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Registered Visitors</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
   <!-- Header and Navbar -->
@@ -31,7 +33,7 @@
   <main class="visitor-list-container">
     <h2>📘 Registered Visitors</h2>
 
-    <input id="searchInput" type="text" placeholder="🔍 Search by name or barcode..." class="search-input"/>
+    <input id="searchInput" type="text" placeholder="🔍 Search by name or barcode..." class="search-input" />
 
     <div id="visitorList" class="visitor-list">
       <p>Loading visitors...</p>
@@ -78,7 +80,7 @@
           const div = document.createElement("div");
           div.className = "visitor-card-full";
           div.innerHTML = `
-            <img src="${visitor.photoBase64 || '/Backend/public/images/default.jpg'}" alt="Photo of ${visitor.name}" class="visitor-photo">
+            <img src="${visitor.photoBase64 || '/images/default.jpg'}" alt="Photo of ${visitor.name}" class="visitor-photo">
 
             <div class="visitor-details">
               <h3>${visitor.name}</h3>
@@ -87,6 +89,15 @@
               <p><strong>Mobile:</strong> ${visitor.mobile}</p>
               <p><strong>Department:</strong> ${visitor.department}</p>
               <p><strong>Year:</strong> ${visitor.year}</p>
+            </div>
+
+            <div class="visitor-actions">
+              <button class="action-btn">⋮</button>
+              <div class="action-dropdown">
+                <a href="#" onclick="updateVisitor('${visitor.barcode}')">Update</a>
+
+                <a href="#" onclick="deleteVisitor('${visitor.barcode}', '${visitor.name}')">Delete</a>
+              </div>
             </div>
           `;
           container.appendChild(div);
@@ -99,6 +110,35 @@
         container.innerHTML = "<p>❌ Failed to load visitors.</p>";
       }
     }
+
+    // --- SCRIPT FOR CLICKABLE DROPDOWN ---
+
+    // Use event delegation to handle clicks on the three-dot buttons
+    document.getElementById('visitorList').addEventListener('click', function (event) {
+      const actionButton = event.target.closest('.action-btn');
+      if (actionButton) {
+        const dropdown = actionButton.nextElementSibling;
+
+        // Close all other open dropdowns first
+        document.querySelectorAll('.action-dropdown.show').forEach(openDropdown => {
+          if (openDropdown !== dropdown) {
+            openDropdown.classList.remove('show');
+          }
+        });
+
+        // Toggle the 'show' class on the clicked dropdown
+        dropdown.classList.toggle('show');
+      }
+    });
+
+    // Close dropdowns if the user clicks anywhere else on the page
+    window.addEventListener('click', function (event) {
+      if (!event.target.closest('.visitor-actions')) {
+        document.querySelectorAll('.action-dropdown.show').forEach(openDropdown => {
+          openDropdown.classList.remove('show');
+        });
+      }
+    });
 
     document.getElementById("prevPage").onclick = () => {
       if (currentPage > 1) loadVisitors(currentPage - 1, document.getElementById("searchInput").value);
@@ -113,6 +153,35 @@
     });
 
     window.onload = () => loadVisitors(1);
+
+    async function deleteVisitor(barcode, name) {
+      if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/students/${barcode}`, {
+          method: "DELETE"
+        });
+
+
+        const result = await res.json();
+        if (result.success) {
+          alert("✅ Visitor deleted successfully.");
+          loadVisitors(currentPage, document.getElementById("searchInput").value);
+        } else {
+          alert("❌ Deletion failed: " + result.message);
+        }
+      } catch (err) {
+        console.error("❌ Error deleting visitor:", err);
+        alert("❌ An error occurred while deleting.");
+      }
+    }
+
+    function updateVisitor(barcode) {
+      window.location.href = `update-visitor.html?barcode=${encodeURIComponent(barcode)}`;
+    }
+
+
   </script>
 </body>
+
 </html>
