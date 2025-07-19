@@ -712,3 +712,33 @@ th, td {
 .action-dropdown.show {
   display: flex;
 }
+/* --- Network Status Indicator --- */
+/* This style ensures the indicator is always visible */
+#net-status {
+  position: fixed; /* Keeps it in the same place even when scrolling */
+  bottom: 20px;
+  left: 20px;
+  padding: 10px 20px;
+  color: white;
+  font-weight: bold;
+  border-radius: 10px;
+  z-index: 2000; /* Ensures it's on top of other elements */
+  transition: background-color 0.5s ease, opacity 0.5s ease;
+  opacity: 1;
+}
+
+/* Style for when the connection is confirmed to be ONLINE */
+#net-status.online {
+  background-color: #28a745; /* Green */
+}
+
+/* Style for when the connection is confirmed to be OFFLINE */
+#net-status.offline {
+  background-color: #dc3545; /* Red */
+}
+
+.log-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

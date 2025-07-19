@@ -38,7 +38,7 @@
                     <span class="icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
                     </span>
-                    <input type="text" id="username" placeholder="Choose a username" required />
+                    <input type="email" id="email" placeholder="Enter Email" required />
                 </div>
                 <div class="input-group">
                     <span class="icon">
@@ -61,7 +61,7 @@
     <script>
         document.getElementById("registerForm").addEventListener("submit", async function (e) {
             e.preventDefault();
-            const username = document.getElementById("username").value;
+            const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             const messageEl = document.getElementById("registerMessage");
 
@@ -69,7 +69,7 @@
                 const res = await fetch("http://localhost:5000/api/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password }),
+                    body: JSON.stringify({ email, password }),
                 });
                 const result = await res.json();
                 if (res.ok && result.success) {

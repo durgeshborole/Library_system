@@ -134,48 +134,47 @@
         <p>Developed by Durgesh Borole | Raghvendra Gupta | Rahul Baravkar | Bhogesh Allapure</p>
     </footer>
 
+    <!-- Script -->
     <script>
         window.addEventListener('DOMContentLoaded', async () => {
-            const hodLoggedIn = sessionStorage.getItem('hodLoggedIn');
-            const department = sessionStorage.getItem('hodDepartment');
+            const token = localStorage.getItem('authToken');
+            const department = localStorage.getItem('hodDepartment');
 
-            if (!hodLoggedIn || !department) {
+            if (!token || !department) {
+                console.warn("🔒 No login found. Redirecting...");
                 window.location.href = 'hod-login.html';
                 return;
             }
 
-            // --- Update Page Titles ---
+            // Update Titles
             document.getElementById('hod-department-title').textContent = `${department} Department`;
             document.querySelector('.hod-welcome h2').textContent = `Welcome, HOD of ${department}`;
             document.getElementById('logTitle').textContent = `Today's Log for ${department}`;
 
-            // --- Fetch and Process Logs ---
             try {
                 const res = await fetch('http://localhost:5000/all-logs');
                 const allLogs = await res.json();
 
                 const today = new Date().toISOString().split('T')[0];
-                const deptLogsToday = allLogs.filter(log => {
-                    return log.department === department && log.date === today;
-                });
+                const deptLogsToday = allLogs.filter(log =>
+                    log.department === department && log.date === today
+                );
 
-                // --- Update Stats Cards ---
-                const totalVisitors = deptLogsToday.length;
-                const currentlyInside = deptLogsToday.filter(log => !log.exitTime).length;
-                document.getElementById('totalDeptVisitors').textContent = totalVisitors;
-                document.getElementById('currentlyInsideDept').textContent = currentlyInside;
+                document.getElementById('totalDeptVisitors').textContent = deptLogsToday.length;
+                document.getElementById('currentlyInsideDept').textContent =
+                    deptLogsToday.filter(log => !log.exitTime).length;
 
-                // --- Populate Log Table ---
                 const tableBody = document.getElementById('hodLogTableBody');
-                tableBody.innerHTML = ''; // Clear loading message
+                tableBody.innerHTML = '';
 
                 if (deptLogsToday.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No entries recorded for your department today.</td></tr>';
+                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No entries recorded for your department today.</td></tr>`;
                 } else {
                     deptLogsToday.forEach(log => {
                         const entryTime = new Date(log.entryTime).toLocaleTimeString();
-                        const exitTime = log.exitTime ? new Date(log.exitTime).toLocaleTimeString() : 'Inside';
-                        
+                        const exitTime = log.exitTime
+                            ? new Date(log.exitTime).toLocaleTimeString()
+                            : 'Inside';
                         const row = `
                             <tr>
                                 <td>${log.name}</td>
@@ -189,14 +188,15 @@
                 }
             } catch (error) {
                 console.error('Failed to load logs:', error);
-                document.getElementById('hodLogTableBody').innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data.</td></tr>';
+                document.getElementById('hodLogTableBody').innerHTML =
+                    '<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data.</td></tr>';
             }
         });
 
-        // --- Logout Functionality ---
+        // Logout button
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            sessionStorage.removeItem('hodLoggedIn');
-            sessionStorage.removeItem('hodDepartment');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('hodDepartment');
             window.location.href = 'hod-login.html';
         });
     </script>
