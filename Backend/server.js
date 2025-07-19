@@ -11,15 +11,24 @@ const path = require("path");
 const PORT = 5000;
 const cron = require('node-cron');
 const multer = require('multer');
-
+const crypto = require('crypto');
 const tempUpload = multer({ dest: os.tmpdir() });
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+require("dotenv").config();
 
 
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 
-
+const loginLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 10, // Limit each IP to 10 login requests per windowMs
+	standardHeaders: true,
+	legacyHeaders: false,
+  message: { success: false, message: "Too many login attempts from this IP, please try again after 15 minutes." }
+});
 
 
 const { spawn } = require("child_process");
@@ -43,16 +52,23 @@ mongoose.connect('mongodb+srv://durgeshborole:u6Ihi1GAKF84YIP1@system.8xuulfp.mo
 // Schemas
 
 const AdminSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true,lowercase: true },
-  password: { type: String, required: true }
+  email: { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true },
+  // 👇 Add these fields
+  passwordResetToken: String,
+  passwordResetExpires: Date
 });
 
 
+// server.js
 
 const HodSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true,lowercase: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
-  department: { type: String, required: true }
+  department: { type: String, required: true },
+  isVerified: { type: Boolean, default: false },
+  otp: { type: String },
+  otpExpires: { type: Date }
 });
 
 
@@ -110,7 +126,46 @@ const Visitor = mongoose.model('Visitor', visitorSchema);
 const Log = mongoose.model('Log', logSchema);
 
 
+// ===================================================================
+// START: AUTHENTICATION AND AUTHORIZATION MIDDLEWARE
+// ===================================================================
 
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (token == null) {
+    return res.sendStatus(401); // Unauthorized
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.sendStatus(403); // Forbidden
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// Middleware to check if the user is an admin
+const isAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: "Admin access required." });
+    }
+    next();
+};
+
+// Middleware to check if the user is an HOD
+const isHod = (req, res, next) => {
+    if (req.user.role !== 'hod') {
+        return res.status(403).json({ success: false, message: "HOD access required." });
+    }
+    next();
+};
+
+// ===================================================================
+// END: AUTHENTICATION AND AUTHORIZATION MIDDLEWARE
+// ===================================================================
 
 function decodeBarcode(barcode) {
   if (!barcode || barcode.length < 5) {
@@ -243,9 +298,14 @@ app.post('/scan', async (req, res) => {
 
 });
 
+// ✅ NEW: A simple endpoint for the frontend to check server connectivity
+app.get("/api/ping", (req, res) => {
+  res.status(200).json({ success: true, message: "pong" });
+});
+
 app.get('/live-log', async (req, res) => {
   try {
-    const today = getCurrentDateString();
+    const today = new Date().toISOString().split('T')[0];
     const logs = await Log.find({ date: today }).sort({ entryTime: -1 });
     return res.status(200).json(logs);
   } catch (err) {
@@ -259,7 +319,6 @@ app.get('/all-logs', async (req, res) => {
     const logs = await Log.find().sort({ entryTime: -1 });
     res.status(200).json(logs);
   } catch (err) {
-    console.error("Failed to fetch all logs:", err);
     res.status(500).json({ error: "Failed to fetch all logs" });
   }
 });
@@ -347,7 +406,7 @@ app.post('/admin/auto-exit', (req, res) => {
 });
 
 // Admin: force exit manually
-app.post('/admin/force-exit', async (req, res) => {
+app.post('/admin/force-exit',authenticateToken, isAdmin, async (req, res) => {
   const today = getCurrentDateString();
   const now = new Date();
 
@@ -364,7 +423,7 @@ app.post('/admin/force-exit', async (req, res) => {
 });
 
 // Admin: Add a new notice
-app.post('/admin/notices', async (req, res) => {
+app.post('/admin/notices',authenticateToken, isAdmin, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Notice text required' });
 
@@ -372,20 +431,6 @@ app.post('/admin/notices', async (req, res) => {
     const newNotice = new Notice({ text });
     await newNotice.save();
     res.status(201).json({ message: 'Notice posted successfully' });
-  } catch (err) {
-    console.error('Failed to save notice:', err);
-    res.status(500).json({ error: 'Failed to save notice' });
-  }
-});
-
-app.post('/admin/notices', async (req, res) => {
-  const { text } = req.body;
-  if (!text) return res.status(400).json({ error: 'Notice text required' });
-
-  try {
-    const newNotice = new Notice({ text });
-    await newNotice.save();
-    res.status(201).json({ success: true, message: 'Notice posted successfully' });
   } catch (err) {
     console.error('Failed to save notice:', err);
     res.status(500).json({ error: 'Failed to save notice' });
@@ -403,7 +448,7 @@ app.get('/notices', async (req, res) => {
   }
 });
 
-app.delete('/admin/notices/:id', async (req, res) => {
+app.delete('/admin/notices/:id',authenticateToken, isAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     await Notice.findByIdAndDelete(id);
@@ -646,7 +691,7 @@ app.get('/photo/:barcode', async (req, res) => {
   res.send(buffer);
 });
 
-require("dotenv").config();
+
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -808,11 +853,11 @@ app.post("/api/register", async (req, res) => {
 });
 
 // Login Admin
-app.post("/api/login", async (req, res) => {
+app.post("/api/login",loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-        return res.status(400).json({ success: false, message: "Email and password are required." });
+      return res.status(400).json({ success: false, message: "Email and password are required." });
     }
     const admin = await Admin.findOne({ email });
 
@@ -825,7 +870,15 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    res.json({ success: true });
+    // ✅ Create a JWT
+    const token = jwt.sign(
+      { id: admin._id, role: 'admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' } // Token expires in 1 hour
+    );
+
+    res.json({ success: true, token }); // ⬅️ Send token to the client
+
   } catch (err) {
     console.error("❌ Login error:", err);
     res.status(500).json({ success: false, message: "Server error during login" });
@@ -837,7 +890,7 @@ app.post("/api/register", async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-        return res.status(400).json({ success: false, message: "Email and password are required." });
+      return res.status(400).json({ success: false, message: "Email and password are required." });
     }
 
     const existing = await Admin.findOne({ email });
@@ -859,58 +912,97 @@ app.post("/api/register", async (req, res) => {
 
 // Password Reset for Admin
 app.post("/api/reset-password", async (req, res) => {
-    const { email, currentPassword, newPassword } = req.body;
+  const { email, currentPassword, newPassword } = req.body;
 
-    if (!email || !currentPassword || !newPassword) {
-        return res.status(400).json({ success: false, message: "All fields are required." });
+  if (!email || !currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: "All fields are required." });
+  }
+
+  try {
+    const admin = await Admin.findOne({ email });
+    if (!admin) {
+      return res.status(404).json({ success: false, message: "Account not found." });
     }
 
-    try {
-        const admin = await Admin.findOne({ email });
-        if (!admin) {
-            return res.status(404).json({ success: false, message: "Account not found." });
-        }
-
-        const isMatch = await bcrypt.compare(currentPassword, admin.password);
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: "Incorrect current password." });
-        }
-
-        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-        admin.password = hashedNewPassword;
-        await admin.save();
-
-        res.status(200).json({ success: true, message: "Password updated successfully!" });
-    } catch (err) {
-        console.error("❌ Password reset error:", err);
-        res.status(500).json({ success: false, message: "Server error during password reset." });
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Incorrect current password." });
     }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    admin.password = hashedNewPassword;
+    await admin.save();
+
+    res.status(200).json({ success: true, message: "Password updated successfully!" });
+  } catch (err) {
+    console.error("❌ Password reset error:", err);
+    res.status(500).json({ success: false, message: "Server error during password reset." });
+  }
 });
 
+
+// server.js
 
 app.post("/api/hod-login", async (req, res) => {
   const { email, password } = req.body;
   try {
     const hod = await Hod.findOne({ email });
-    if (!hod) return res.status(401).json({ success: false, message: "Invalid credentials" });
+    if (!hod) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
 
     const match = await bcrypt.compare(password, hod.password);
-    if (!match) return res.status(401).json({ success: false, message: "Invalid credentials" });
+    if (!match) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
 
-    res.json({ success: true, department: hod.department });
-  } catch (err)
-  {
+    // --- NEW LOGIC FOR VERIFICATION ---
+    if (!hod.isVerified) {
+      // This is the first successful login. Trigger OTP verification.
+      const otp = crypto.randomInt(100000, 999999).toString();
+      hod.otp = otp;
+      hod.otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+      await hod.save();
+
+      // Send the OTP via email
+      await transporter.sendMail({
+        to: hod.email,
+        from: process.env.EMAIL_USER,
+        subject: 'HOD Account Login Verification Code',
+        text: `Your one-time verification code is: ${otp}\n\nThis code is required to complete your first login and will expire in 10 minutes.\n`
+      });
+
+      // Respond to the client, telling them OTP is required
+      return res.status(200).json({
+        success: true,
+        verificationRequired: true, // A flag for the frontend
+        message: "Login successful. Please enter the verification code sent to your email to continue."
+      });
+
+    } else {
+      // This is a normal login for an already verified user.
+      const token = jwt.sign(
+        { id: hod._id, role: 'hod', department: hod.department },
+        process.env.JWT_SECRET,
+        { expiresIn: '8h' }
+      );
+      
+      return res.json({ success: true, verificationRequired: false, token });
+    }
+
+  } catch (err) {
     console.error("❌ HOD login error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
 // Route to register a new HOD
+// Register HOD - no changes needed, default passwordResetRequired is true
 app.post("/api/register-hod", async (req, res) => {
   const { email, password, department } = req.body;
-   if (!email || !password || !department) {
-        return res.status(400).json({ success: false, message: "Email, password, and department are required." });
-    }
+  if (!email || !password || !department) {
+    return res.status(400).json({ success: false, message: "Email, password, and department are required." });
+  }
   try {
     const existing = await Hod.findOne({ email });
     if (existing) {
@@ -925,6 +1017,80 @@ app.post("/api/register-hod", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error during HOD registration." });
   }
 });
+
+app.post("/api/hod-initial-reset", async (req, res) => {
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword) {
+    return res.status(400).json({ success: false, message: "Email and new password are required." });
+  }
+
+  try {
+    const hod = await Hod.findOne({ email });
+    if (!hod) {
+      return res.status(404).json({ success: false, message: "HOD account not found." });
+    }
+
+    // Only allow this if a reset is actually required
+    if (!hod.passwordResetRequired) {
+      return res.status(403).json({ success: false, message: "Password has already been set." });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    hod.password = hashedNewPassword;
+    hod.passwordResetRequired = false; // The crucial step
+    await hod.save();
+
+    res.status(200).json({ success: true, message: "Password has been set successfully. Please log in again." });
+  } catch (err) {
+    console.error("❌ HOD initial reset error:", err);
+    res.status(500).json({ success: false, message: "Server error during password reset." });
+  }
+});
+
+// server.js
+
+app.post("/api/hod/verify-login", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: "Email and OTP are required." });
+    }
+
+    // Find the HOD and validate the OTP
+    const hod = await Hod.findOne({
+      email,
+      otp,
+      otpExpires: { $gt: Date.now() } // Check that OTP is not expired
+    });
+
+    if (!hod) {
+      return res.status(400).json({ success: false, message: "Invalid or expired verification code." });
+    }
+
+    // If OTP is correct, update the account to be verified
+    hod.isVerified = true;
+    hod.otp = undefined;
+    hod.otpExpires = undefined;
+    await hod.save();
+
+    // Now, generate the standard login token
+    const token = jwt.sign(
+      { id: hod._id, role: 'hod', department: hod.department },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.status(200).json({ success: true, token, message: "Verification successful. You are now logged in." });
+
+  } catch (err) {
+    console.error("❌ HOD Login Verification Error:", err);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+});
+
+
+
 // Starts the server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
