@@ -4,18 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - MITCORER</title>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="style.css" /> <!-- For header/footer -->
-    <link rel="stylesheet" href="auth-styles.css" /> <!-- For login form -->
-</head>
+    <link rel="stylesheet" href="style.css" /> <link rel="stylesheet" href="auth-styles.css" /> </head>
 <body>
 
-    <!-- Header from index.html -->
     <header class="mit-header">
         <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
         <div class="header-text">
@@ -29,7 +24,6 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="auth-wrapper">
         <div class="auth-container">
             <h2>Admin Login</h2>
@@ -49,11 +43,10 @@
                 <button type="submit" class="submit-btn">Login</button>
             </form>
             <p id="loginMessage" class="message"></p>
-            <p class="auth-link">Forgot your password? <a href="password-reset.html">Reset it here</a></p>
+            <p class="auth-link">Not an admin? <a href="hod-login.html">Go to HOD Login</a></p>
         </div>
     </main>
 
-    <!-- Footer from index.html -->
     <footer class="footer">
         <p>Developed by Durgesh Borole | Raghvendra Gupta | Rahul Baravkar | Bhogesh Allapure</p>
     </footer>
@@ -61,24 +54,32 @@
     <script>
         document.getElementById("loginForm").addEventListener("submit", async function (e) {
             e.preventDefault();
-            const username = document.getElementById("username").value;
+            // Correctly get the email value from the input with id="Email"
+            const email = document.getElementById("Email").value;
             const password = document.getElementById("password").value;
             const messageEl = document.getElementById("loginMessage");
+            
+            messageEl.textContent = ''; // Clear previous messages
 
             try {
                 const res = await fetch("http://localhost:5000/api/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password }),
+                    // Send `email` property, not `username`
+                    body: JSON.stringify({ email, password }),
                 });
                 const result = await res.json();
-                if (res.ok && result.success) {
-                    sessionStorage.setItem("loggedIn", "true");
-                    window.location.href = "registered.html";
+                if (res.ok && result.token) {
+                    // Store the authentication token from the server
+                    localStorage.setItem("authToken", result.token);
+                    // Redirect to the correct admin panel
+                    window.location.href = "admin.html";
                 } else {
+                    messageEl.style.color = 'var(--error-color)';
                     messageEl.innerText = result.message || "An unknown error occurred.";
                 }
             } catch (error) {
+                messageEl.style.color = 'var(--error-color)';
                 messageEl.innerText = "Cannot connect to the server.";
             }
         });

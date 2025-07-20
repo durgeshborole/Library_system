@@ -4,52 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HOD Registration - MITCORER</title>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="style.css" /> <!-- For header/footer -->
-    <link rel="stylesheet" href="auth-styles.css" /> <!-- For form -->
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="auth-styles.css" />
 </head>
 <body>
 
-    <!-- Header from index.html -->
     <header class="mit-header">
         <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
         <div class="header-text">
             <p class="sub-text">Under the aegis of MAEER's MIT Pune</p>
             <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
-            <p class="aff-text">
-                Affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAH) Solapur, Approved by AICTE, New Delhi,
-                Recognised by Govt. Of Maharashtra, DTE Mumbai.<br />
-                <strong>DTE CODE - 06901</strong>
-            </p>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="auth-wrapper">
         <div class="auth-container">
             <h2>Register New HOD</h2>
             <form id="hodForm" novalidate>
                 <div class="input-group">
-                    <span class="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-envelope-fill" viewBox="0 0 16 16"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757zm3.436-.586L16 11.803V4.697l-5.803 3.546z"/></svg>
-                    </span>
+                    <span class="icon">📧</span>
                     <input type="email" id="email" placeholder="HOD Email Address" required />
                 </div>
                  <div class="input-group">
-                    <span class="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-building" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M14.763.075A.5.5 0 0 1 15 .5v15a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5V14h-1v1.5a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5V14h-1v1.5a.5.5 0 0 1-.5.5H.5a.5.5 0 0 1-.5-.5v-15a.5.5 0 0 1 .237-.425l4.5-3a.5.5 0 0 1 .526 0l4.5 3 .474.316zM.5 15h2.5v-1.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V15h2.5V1.25L8 4.208 4.5 1.25V15h-4zM8 3c.828 0 1.5-.672 1.5-1.5S8.828 0 8 0s-1.5.672-1.5 1.5S7.172 3 8 3zm0 2c.828 0 1.5-.672 1.5-1.5S8.828 2 8 2s-1.5.672-1.5 1.5S7.172 5 8 5zm0 2c.828 0 1.5-.672 1.5-1.5S8.828 4 8 4s-1.5.672-1.5 1.5S7.172 7 8 7zm0 2c.828 0 1.5-.672 1.5-1.5S8.828 6 8 6s-1.5.672-1.5 1.5S7.172 9 8 9zm0 2c.828 0 1.5-.672 1.5-1.5S8.828 8 8 8s-1.5.672-1.5 1.5S7.172 11 8 11zm0 2c.828 0 1.5-.672 1.5-1.5S8.828 10 8 10s-1.5.672-1.5 1.5S7.172 13 8 13z"/></svg>
-                    </span>
+                    <span class="icon">🏢</span>
                     <input type="text" id="department" placeholder="Department" required />
                 </div>
                 <div class="input-group">
-                    <span class="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg>
-                    </span>
+                    <span class="icon">📱</span>
+                    <input type="tel" id="mobile" placeholder="Mobile Number" required />
+                </div>
+                <div class="input-group">
+                    <span class="icon">🎂</span>
+                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" id="dob" placeholder="Date of Birth" required />
+                </div>
+                <div class="input-group">
+                    <span class="icon">🔒</span>
                     <input type="password" id="password" placeholder="Create a password" required />
                 </div>
                 <button type="submit" class="submit-btn">Register HOD</button>
@@ -59,7 +51,6 @@
         </div>
     </main>
 
-    <!-- Footer from index.html -->
     <footer class="footer">
         <p>Developed by Durgesh Borole | Raghvendra Gupta | Rahul Baravkar | Bhogesh Allapure</p>
     </footer>
@@ -67,17 +58,20 @@
     <script>
         document.getElementById("hodForm").addEventListener("submit", async (e) => {
             e.preventDefault();
-            // CORRECTED: Get value from 'email' input and send 'email' property
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             const department = document.getElementById("department").value;
+            // ✅ GET NEW VALUES
+            const mobile = document.getElementById("mobile").value;
+            const dob = document.getElementById("dob").value;
             const messageEl = document.getElementById("msg");
             
             try {
                 const res = await fetch("http://localhost:5000/api/register-hod", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password, department }),
+                    // ✅ SEND NEW VALUES IN BODY
+                    body: JSON.stringify({ email, password, department, mobile, dob }),
                 });
                 const result = await res.json();
                 messageEl.innerText = result.message;

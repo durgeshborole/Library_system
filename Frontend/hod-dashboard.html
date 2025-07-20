@@ -18,6 +18,7 @@
             border-radius: 12px;
             margin-bottom: 25px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
         }
         .hod-welcome h2 {
             margin: 0;
@@ -48,7 +49,7 @@
             border-bottom: 1px solid var(--border-color);
         }
         .log-table th {
-            background-color: #f8f9fa;
+            background-color: #ff0000;
             font-weight: 600;
         }
         .log-table tr:last-child td {
@@ -68,7 +69,7 @@
             transition: background-color 0.3s;
         }
         .logout-btn:hover {
-            background-color: #c82333;
+            background-color: #be2d3c;
         }
     </style>
 </head>
@@ -87,6 +88,7 @@
     <nav class="navbar">
         <div id="hod-department-title" class="logo">HOD Dashboard</div>
         <ul class="nav-links">
+            <li><a href="hod-analysis.html" style="color: rgb(255, 255, 255); text-decoration: none; padding: 8px 12px; border-radius: 8px; background-color: var(--primary-color);">Analysis</a></li>
             <li><button id="logoutBtn" class="logout-btn">Logout</button></li>
         </ul>
     </nav>
@@ -95,16 +97,16 @@
     <main class="dashboard-main">
         <section id="hodWelcome" class="hod-welcome">
             <h2>Welcome, HOD!</h2>
-            <p>Here's the real-time library entry overview for your department.</p>
+            <p>Here's the real-time library entry overview</p>
         </section>
 
         <section class="stats-cards">
             <div class="card">
-                <h3>Today's Visitors (Your Dept)</h3>
+                <h3>Today's Visitors </h3>
                 <p id="totalDeptVisitors">0</p>
             </div>
             <div class="card">
-                <h3>Currently Inside (Your Dept)</h3>
+                <h3>Currently Inside </h3>
                 <p id="currentlyInsideDept">0</p>
             </div>
         </section>
@@ -148,7 +150,7 @@
 
             // Update Titles
             document.getElementById('hod-department-title').textContent = `${department} Department`;
-            document.querySelector('.hod-welcome h2').textContent = `Welcome, HOD of ${department}`;
+            document.querySelector('.hod-welcome h2').textContent = `Welcome`;
             document.getElementById('logTitle').textContent = `Today's Log for ${department}`;
 
             try {
