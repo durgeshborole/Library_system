@@ -13,7 +13,7 @@
         .filters button { background: var(--primary-color); color: white; cursor: pointer; border: none; }
         .log-table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; }
         .log-table th, .log-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .log-table th { background-color: #f8f9fa; font-weight: 600; }
+        .log-table th { background-color: #ff0000; font-weight: 600; }
         .log-table tr:hover { background-color: #f0f2f5; }
         .logout-btn { background-color: var(--error-color); color: white; padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
     </style>
@@ -21,12 +21,17 @@
 <body>
 
     <header class="mit-header">
-        <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
-        <div class="header-text">
-            <p class="sub-text">Under the aegis of MAEER's MIT Pune</p>
-            <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
-        </div>
-    </header>
+    <img src="/Backend/public/images/mit-corer.jpg" alt="MITCORER Logo" class="mit-logo" />
+    <div class="header-text">
+      <p class="sub-text">Under the aegis of MAEER's MIT Pune</p>
+      <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
+      <p class="aff-text">
+        Affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAH) Solapur, Approved by AICTE, New Delhi,
+        Recognised by Govt. Of Maharashtra, DTE Mumbai.<br />
+        <strong>DTE CODE - 06901</strong>
+      </p>
+    </div>
+  </header>
 
     <nav class="navbar">
         <div id="hod-department-title" class="logo">Department Analysis</div>
@@ -78,7 +83,7 @@
 
             // --- Authentication and Page Setup ---
             if (!token || !department) {
-                window.location.href = 'hod-login.html';
+                window.location.href = 'unified-login.html';
                 return;
             }
             document.getElementById('hod-department-title').textContent = `${department} Analysis`;
@@ -175,7 +180,7 @@
             document.getElementById('logoutBtn').addEventListener('click', () => {
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('hodDepartment');
-                window.location.href = 'hod-login.html';
+                window.location.href = 'unified-login.html';
             });
 
             // --- Attach Event Listeners ---

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principal Login - MITCORER</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="auth-styles.css" />
+</head>
+<body>
+    <header class="mit-header">
+        <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
+        <div class="header-text">
+            <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
+        </div>
+    </header>
+    <main class="auth-wrapper">
+        <div class="auth-container">
+            <h2>Principal Login</h2>
+            <form id="loginForm">
+                <div class="input-group">
+                    <input type="email" id="email" placeholder="Principal Email" required />
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Password" required />
+                </div>
+                <button type="submit" class="submit-btn">Login</button>
+            </form>
+            <p id="loginMessage" class="message"></p>
+        </div>
+    </main>
+    <footer class="footer">
+        <p>Developed by Durgesh Borole | Raghvendra Gupta | Rahul Baravkar | Bhogesh Allapure</p>
+    </footer>
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const messageEl = document.getElementById("loginMessage");
+            try {
+                const res = await fetch("/api/principal-login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password }),
+                });
+                const result = await res.json();
+                if (res.ok && result.token) {
+                    localStorage.setItem("authToken", result.token);
+                    localStorage.setItem("userRole", "principal"); // Differentiate from admin
+                    window.location.href = "principal-dashboard.html";
+                } else {
+                    messageEl.style.color = 'red';
+                    messageEl.innerText = result.message || "Login failed.";
+                }
+            } catch (error) {
+                messageEl.style.color = 'red';
+                messageEl.innerText = "Cannot connect to the server.";
+            }
+        });
+    </script>
+</body>
+</html>

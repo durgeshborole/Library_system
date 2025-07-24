@@ -6,177 +6,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Update Visitor</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="auth-styles.css" />
 </head>
 
 <body>
-    <div class="update-form-container">
-        <h2>Update Visitor Details</h2>
-        <form id="updateForm">
-            <div class="form-group">
-                <label>Barcode</label>
-                <input type="text" id="barcode" name="barcode" readonly />
-            </div>
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" id="name" name="name" required />
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="email" name="email" required />
-            </div>
-            <div class="form-group">
-                <label>Mobile</label>
-                <input type="text" id="mobile" name="mobile" required />
-            </div>
-            
-            
-            <div class="form-group">
-                <label>Photo</label>
-                <input type="file" id="photo" accept="image/*" />
-                <img id="photoPreview" src="/images/default.jpg" alt="Preview" />
-            </div>
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            <h2>Update Visitor Details</h2>
+            <form id="updateForm">
+                <div class="form-group">
+                    <label>Barcode</label>
+                    <input type="text" id="barcode" name="barcode" readonly />
+                </div>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="name" name="name" required />
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" name="email" />
+                </div>
+                <div class="form-group">
+                    <label>Mobile</label>
+                    <input type="text" id="mobile" name="mobile" />
+                </div>
+                
+                <div class="form-group">
+                    <label>New Photo (Optional)</label>
+                    <input type="file" id="photo" name="photo" accept="image/*" />
+                    <img id="photoPreview" src="/images/default.jpg" alt="Current Photo" style="max-width: 100px; margin-top: 10px;" />
+                </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn-submit">Update</button>
-                <a href="registered.html" class="btn-cancel">Cancel</a>
-            </div>
-        </form>
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">Update Visitor</button>
+                    <a href="registered.html" class="btn-cancel" style="text-align: center; padding: 10px; background-color: #6c757d;">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <!-- <script>
-    const barcode = new URLSearchParams(window.location.search).get("barcode");
-    const form = document.getElementById("updateForm");
-
-    async function loadVisitor() {
-      const res = await fetch(`http://localhost:5000/api/students/${barcode}`);
-      const data = await res.json();
-
-      if (!data.student) {
-        alert("Visitor not found");
-        window.location.href = "registered.html";
-        return;
-      }
-
-      const visitor = data.student;
-      document.getElementById("barcode").value = visitor.barcode;
-      document.getElementById("name").value = visitor.name;
-      document.getElementById("email").value = visitor.email;
-      document.getElementById("mobile").value = visitor.mobile;
-      document.getElementById("department").value = visitor.department;
-      document.getElementById("year").value = visitor.year;
-      document.getElementById("photoPreview").src = visitor.photoBase64 || "/images/default.jpg";
-    }
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const formData = new FormData();
-      formData.append("name", form.name.value);
-      formData.append("email", form.email.value);
-      formData.append("mobile", form.mobile.value);
-      formData.append("department", form.department.value);
-      formData.append("year", form.year.value);
-      if (form.photo.files[0]) formData.append("photo", form.photo.files[0]);
-
-      const res = await fetch(`http://localhost:5000/api/students/${barcode}`, {
-        method: "PUT",
-        body: formData,
-      });
-
-      const result = await res.json();
-      if (result.success) {
-        alert("✅ Visitor updated successfully!");
-        window.location.href = "registered.html";
-      } else {
-        alert("❌ Update failed: " + result.message);
-      }
-    });
-
-    loadVisitor();
-  </script> -->
-
     <script>
-        const barcode = new URLSearchParams(window.location.search).get("barcode");
-        const form = document.getElementById("updateForm");
-
-        // 🔹 Preload existing visitor details
-        async function loadVisitor() {
-            try {
-                const res = await fetch(`http://localhost:5000/api/students/${barcode}`);
-                const data = await res.json();
-
-                if (!data.student) {
-                    alert("❌ Visitor not found.");
-                    window.location.href = "registered.html";
-                    return;
-                }
-
-                const visitor = data.student;
-
-                document.getElementById("barcode").value = visitor.barcode;
-                document.getElementById("name").value = visitor.name;
-                document.getElementById("email").value = visitor.email || "";
-                document.getElementById("mobile").value = visitor.mobile || "";
-                
-                
-
-
-                document.getElementById("photoPreview").src = visitor.photoUrl || "/images/default.jpg";
-
-            } catch (err) {
-                console.error("Error loading visitor:", err);
-                alert("❌ Failed to load visitor.");
-            }
-        }
-
-        // 🔹 Update form submission
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-
-            const formData = new FormData();
-            formData.append("name", form.name.value);
-            formData.append("email", form.email.value);
-            formData.append("mobile", form.mobile.value);
+        document.addEventListener('DOMContentLoaded', () => {
+            const barcode = new URLSearchParams(window.location.search).get("barcode");
+            const form = document.getElementById("updateForm");
             
-            
-            if (form.photo.files[0]) {
-                formData.append("photo", form.photo.files[0]);
+            // ✅ Get the admin authentication token
+            const token = localStorage.getItem('authToken');
+
+            // Redirect if barcode is missing or user is not logged in
+            if (!barcode || !token) {
+                alert("Error: Missing barcode or not logged in. Redirecting...");
+                window.location.href = "registered.html";
+                return;
             }
 
-            try {
-                const res = await fetch(`http://localhost:5000/api/students/${barcode}`, {
-                    method: "PUT",
-                    body: formData,
-                });
+            const authHeaders = { 'Authorization': `Bearer ${token}` };
 
-                let result;
+            // 🔹 Preload existing visitor details
+            async function loadVisitor() {
                 try {
-                    result = await res.json();
-                } catch (e) {
-                    console.error("Error parsing response:", e);
-                    const text = await res.text();
-                    console.error("Response was:", text);
-                    alert("❌ Server returned an unexpected response. See console for details.");
-                    return;
-                }
+                    // ✅ Using relative URL and auth headers
+                    const res = await fetch(`http://localhost:5000/api/students/${barcode}`, { headers: authHeaders });
+                    const data = await res.json();
 
-                if (res.ok && result.success) {
-                    alert("✅ Visitor updated successfully!");
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || "Visitor not found.");
+                    }
+
+                    const visitor = data.student;
+                    document.getElementById("barcode").value = visitor.barcode;
+                    document.getElementById("name").value = visitor.name;
+                    document.getElementById("email").value = visitor.email || "";
+                    document.getElementById("mobile").value = visitor.mobile || "";
+                    document.getElementById("photoPreview").src = visitor.photoUrl || "/images/default.jpg";
+
+                } catch (err) {
+                    console.error("Error loading visitor:", err);
+                    alert("❌ Failed to load visitor: " + err.message);
                     window.location.href = "registered.html";
-                } else {
-                    alert("❌ Update failed: " + (result.message || "Unknown error"));
                 }
-
-
-            } catch (err) {
-                console.error("Error updating visitor:", err);
-                alert("❌ Error occurred while updating.");
             }
+
+            // 🔹 Update form submission
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(form);
+                
+                try {
+                    // ✅ Using relative URL and auth headers
+                    const res = await fetch(`http://localhost:5000/api/students/${barcode}`, {
+                        method: "PUT",
+                        headers: authHeaders, // No Content-Type needed for FormData
+                        body: formData,
+                    });
+
+                    const result = await res.json();
+
+                    if (res.ok && result.success) {
+                        alert("✅ Visitor updated successfully!");
+                        window.location.href = "registered.html";
+                    } else {
+                        alert("❌ Update failed: " + (result.message || "Unknown error"));
+                    }
+                } catch (err) {
+                    console.error("Error updating visitor:", err);
+                    alert("❌ Error occurred while updating.");
+                }
+            });
+
+            loadVisitor();
         });
-
-        loadVisitor();
     </script>
-
 </body>
 
 </html>

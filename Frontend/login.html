@@ -1,23 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - MITCORER</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="style.css" /> <link rel="stylesheet" href="auth-styles.css" /> </head>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="auth-styles.css" />
+</head>
+
 <body>
 
     <header class="mit-header">
-        <img src="/images/mit-corer.png" alt="MITCORER Logo" class="mit-logo" />
+        <img src="/Backend/public/images/mit-corer.jpg" alt="MITCORER Logo" class="mit-logo" />
         <div class="header-text">
             <p class="sub-text">Under the aegis of MAEER's MIT Pune</p>
             <h1>MIT COLLEGE OF RAILWAY ENGINEERING & RESEARCH, Barshi</h1>
             <p class="aff-text">
-                Affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAH) Solapur, Approved by AICTE, New Delhi,
+                Affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAH) Solapur, Approved by AICTE, New
+                Delhi,
                 Recognised by Govt. Of Maharashtra, DTE Mumbai.<br />
                 <strong>DTE CODE - 06901</strong>
             </p>
@@ -30,13 +36,20 @@
             <form id="loginForm" novalidate>
                 <div class="input-group">
                     <span class="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-person-fill" viewBox="0 0 16 16">
+                            <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+                        </svg>
                     </span>
                     <input type="email" id="Email" placeholder="Your Email" required />
                 </div>
                 <div class="input-group">
                     <span class="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-lock-fill" viewBox="0 0 16 16">
+                            <path
+                                d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                        </svg>
                     </span>
                     <input type="password" id="password" placeholder="Password" required />
                 </div>
@@ -54,35 +67,39 @@
     <script>
         document.getElementById("loginForm").addEventListener("submit", async function (e) {
             e.preventDefault();
-            // Correctly get the email value from the input with id="Email"
             const email = document.getElementById("Email").value;
             const password = document.getElementById("password").value;
             const messageEl = document.getElementById("loginMessage");
-            
-            messageEl.textContent = ''; // Clear previous messages
+
+            messageEl.textContent = '';
 
             try {
                 const res = await fetch("http://localhost:5000/api/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    // Send `email` property, not `username`
                     body: JSON.stringify({ email, password }),
                 });
+
                 const result = await res.json();
+
                 if (res.ok && result.token) {
-                    // Store the authentication token from the server
+                    // Store the authentication token
                     localStorage.setItem("authToken", result.token);
-                    // Redirect to the correct admin panel
-                    window.location.href = "admin.html";
+                    // ✅ Store the admin's email to display in the profile
+                    localStorage.setItem("adminEmail", email);
+
+                    // Redirect to the admin panel
+                    window.location.href = "index.html";
                 } else {
-                    messageEl.style.color = 'var(--error-color)';
+                    messageEl.style.color = 'red';
                     messageEl.innerText = result.message || "An unknown error occurred.";
                 }
             } catch (error) {
-                messageEl.style.color = 'var(--error-color)';
+                messageEl.style.color = 'red';
                 messageEl.innerText = "Cannot connect to the server.";
             }
         });
     </script>
 </body>
+
 </html>
